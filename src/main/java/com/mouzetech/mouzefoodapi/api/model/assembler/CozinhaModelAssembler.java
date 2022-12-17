@@ -1,28 +1,34 @@
 package com.mouzetech.mouzefoodapi.api.model.assembler;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.server.mvc.RepresentationModelAssemblerSupport;
 import org.springframework.stereotype.Component;
 
+import com.mouzetech.mouzefoodapi.api.ApiLinkBuilder;
+import com.mouzetech.mouzefoodapi.api.controller.CozinhaController;
 import com.mouzetech.mouzefoodapi.api.model.output.CozinhaModel;
 import com.mouzetech.mouzefoodapi.domain.model.Cozinha;
 
 @Component
-public class CozinhaModelAssembler {
+public class CozinhaModelAssembler extends RepresentationModelAssemblerSupport<Cozinha, CozinhaModel> {
+
+	public CozinhaModelAssembler() {
+		super(CozinhaController.class, CozinhaModel.class);
+	}
 
 	@Autowired
 	private ModelMapper modelMapper;
 	
-	public CozinhaModel toModel(Cozinha cozinha) {
-		return modelMapper.map(cozinha, CozinhaModel.class);
-	}
+	@Autowired
+	private ApiLinkBuilder apiLinkBuilder;
 	
-	public List<CozinhaModel> toCollectionModel(List<Cozinha> cozinhas) {
-		return cozinhas.stream()
-				.map(cozinha -> toModel(cozinha))
-				.collect(Collectors.toList());
+	public CozinhaModel toModel(Cozinha cozinha) {
+		CozinhaModel cozinhaModel = createModelWithId(cozinha.getId(), cozinha);
+		modelMapper.map(cozinha, cozinhaModel);
+		
+		cozinhaModel.add(apiLinkBuilder.linkToCozinha("cozinhas"));
+		
+		return cozinhaModel;
 	}
 }

@@ -1,10 +1,10 @@
 package com.mouzetech.mouzefoodapi.api.controller;
 
-import java.util.List;
-
 import javax.validation.Valid;
 
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,37 +25,38 @@ import com.mouzetech.mouzefoodapi.api.model.output.UsuarioModel;
 import com.mouzetech.mouzefoodapi.domain.model.Usuario;
 import com.mouzetech.mouzefoodapi.domain.repository.UsuarioRepository;
 import com.mouzetech.mouzefoodapi.domain.service.CadastroUsuarioService;
+import com.mouzetech.mouzefoodapi.openapi.controller.UsuarioControllerOpenApi;
 
 import lombok.AllArgsConstructor;
 
 @RestController
 @RequestMapping("/usuarios")
 @AllArgsConstructor
-public class UsuarioController {
+public class UsuarioController implements UsuarioControllerOpenApi {
 
 	private UsuarioRepository usuarioRepository;
 	private CadastroUsuarioService cadastroUsuarioService;
 	private UsuarioModelAssembler usuarioModelAssembler;
 	private UsuarioInputDisassembler usuarioInputDisassembler;
 	
-	@GetMapping
-	public ResponseEntity<List<UsuarioModel>> buscarTodos(){
-		return ResponseEntity.ok(usuarioModelAssembler.toCollectionModel(usuarioRepository.findAll()));
+	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+	public CollectionModel<UsuarioModel> buscarTodos(){
+		return usuarioModelAssembler.toCollectionModel(usuarioRepository.findAll());
 	}
 	
-	@GetMapping("/{usuarioId}")
+	@GetMapping(value = "/{usuarioId}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<UsuarioModel> buscarPorId(@PathVariable Long usuarioId){
 		return ResponseEntity.ok(usuarioModelAssembler.toModel(cadastroUsuarioService.buscarPorId(usuarioId)));
 	}
 	
-	@PostMapping
+	@PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<UsuarioModel> salvar(@RequestBody @Valid UsuarioInputComSenha usuarioInput){
 		Usuario usuario = usuarioInputDisassembler.toObject(usuarioInput);
 		usuario = cadastroUsuarioService.salvar(usuario);
 		return ResponseEntity.status(HttpStatus.CREATED).body(usuarioModelAssembler.toModel(usuario));
 	}
 	
-	@PutMapping("/{usuarioId}")
+	@PutMapping(value = "/{usuarioId}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<UsuarioModel> atualizar(@PathVariable Long usuarioId, @RequestBody @Valid UsuarioInput usuarioSemSenhaInput) {
 		Usuario usuario = cadastroUsuarioService.buscarPorId(usuarioId);
 		usuarioInputDisassembler.copyToDomainObject(usuarioSemSenhaInput, usuario);

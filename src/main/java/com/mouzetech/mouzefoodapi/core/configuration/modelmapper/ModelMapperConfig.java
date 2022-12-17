@@ -1,4 +1,4 @@
-package com.mouzetech.mouzefoodapi.core.config;
+package com.mouzetech.mouzefoodapi.core.configuration.modelmapper;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;

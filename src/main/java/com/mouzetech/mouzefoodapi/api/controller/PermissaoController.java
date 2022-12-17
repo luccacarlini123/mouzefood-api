@@ -1,10 +1,10 @@
 package com.mouzetech.mouzefoodapi.api.controller;
 
-import java.util.List;
-
 import javax.validation.Valid;
 
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,34 +23,33 @@ import com.mouzetech.mouzefoodapi.api.model.output.PermissaoModel;
 import com.mouzetech.mouzefoodapi.domain.model.Permissao;
 import com.mouzetech.mouzefoodapi.domain.repository.PermissaoRepository;
 import com.mouzetech.mouzefoodapi.domain.service.CadastroPermissaoService;
+import com.mouzetech.mouzefoodapi.openapi.controller.PermissaoControllerOpenApi;
 
 import lombok.AllArgsConstructor;
 
 @RestController
 @RequestMapping("/permissoes")
 @AllArgsConstructor
-public class PermissaoController {
+public class PermissaoController implements PermissaoControllerOpenApi {
 
 	private CadastroPermissaoService cadastroPermissaoService;
 	private PermissaoInputDisassembler permissaoInputDisassembler;
 	private PermissaoModelAssembler permissaoModelAssembler;
 	private PermissaoRepository permissaoRepository;
 	
-	@GetMapping
-	public ResponseEntity<List<PermissaoModel>> buscarTodas(){
-		return ResponseEntity.ok(
-				permissaoModelAssembler.toCollectionModel(
-						permissaoRepository.findAll()));
+	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+	public CollectionModel<PermissaoModel> buscarTodas(){
+		return permissaoModelAssembler.toCollectionModel(permissaoRepository.findAll());
 	}
 	
-	@GetMapping("/{permissaoId}")
+	@GetMapping(value = "/{permissaoId}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<PermissaoModel> buscarPorId(@PathVariable Long permissaoId){
 		Permissao permissao = cadastroPermissaoService.buscarPorId(permissaoId);
 		return ResponseEntity.ok(permissaoModelAssembler.toModel(permissao));
 				
 	}
 	
-	@PostMapping
+	@PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(code = HttpStatus.CREATED)
 	public PermissaoModel cadastrar(@RequestBody @Valid PermissaoInput permissaoInput) {
 		Permissao permissao = permissaoInputDisassembler.toObject(permissaoInput);

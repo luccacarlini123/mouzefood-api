@@ -50,9 +50,9 @@ insert into restaurante(id, nome, taxa_frete, cozinha_id, data_cadastro, data_at
 insert into restaurante(id, nome, taxa_frete, cozinha_id, data_cadastro, data_atualizacao, ativo, aberto) values(3, 'Putitas', 3.99, 3, utc_timestamp, utc_timestamp, true, true);
 
 
-insert into forma_pagamento(id, descricao) values(1, 'Cartão de crédito');
-insert into forma_pagamento(id, descricao) values(2, 'Cartão de débito');
-insert into forma_pagamento(id, descricao) values(3, 'Dinheiro');
+insert into forma_pagamento(id, descricao, data_atualizacao) values(1, 'Cartão de crédito', utc_timestamp);
+insert into forma_pagamento(id, descricao, data_atualizacao) values(2, 'Cartão de débito', utc_timestamp);
+insert into forma_pagamento(id, descricao, data_atualizacao) values(3, 'Dinheiro', utc_timestamp);
 
 insert into restaurante_forma_pagamento(restaurante_id, forma_pagamento_id) values (1, 1), (1, 2), (1, 3), (2, 3), (3, 1), (3, 2);
 
@@ -62,7 +62,7 @@ insert into produto(id, nome, descricao, preco, ativo, restaurante_id) values(3,
 
 insert into grupo (id, nome) values (1, 'Gerente'), (2, 'Vendedor'), (3, 'Secretária'), (4, 'Cadastrador');
 
-insert into permissao(id, nome, descricao) values(1, 'Excluir Restaurante', 'Essa permissão é para excluir um Restaurante, apenas admins podem fazer uso dela');
+insert into permissao(id, nome, descricao) values(1, 'EXCLUIR RESTAURANTE', 'Essa permissão é para excluir um Restaurante, apenas admins podem fazer uso dela');
 
 insert into usuario(id, nome, email, senha, data_cadastro) values(1, 'Nyjah', 'lucca.carlini1998@gmail.com', '123', utc_timestamp);
 

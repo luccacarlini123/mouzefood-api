@@ -1,13 +1,12 @@
 package com.mouzetech.mouzefoodapi.api.controller;
 
-import java.util.List;
-
 import javax.validation.Valid;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.mouzetech.mouzefoodapi.api.model.CozinhaXmlWrapper;
+import com.mouzetech.mouzefoodapi.api.ResourceUriHelper;
 import com.mouzetech.mouzefoodapi.api.model.assembler.CozinhaModelAssembler;
 import com.mouzetech.mouzefoodapi.api.model.disassembler.CozinhaInputDisassembler;
 import com.mouzetech.mouzefoodapi.api.model.input.CozinhaInput;
@@ -29,13 +28,14 @@ import com.mouzetech.mouzefoodapi.api.model.output.CozinhaModel;
 import com.mouzetech.mouzefoodapi.domain.model.Cozinha;
 import com.mouzetech.mouzefoodapi.domain.repository.CozinhaRepository;
 import com.mouzetech.mouzefoodapi.domain.service.CadastroCozinhaService;
+import com.mouzetech.mouzefoodapi.openapi.controller.CozinhaControllerOpenApi;
 
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 @RestController
 @RequestMapping("/cozinhas")
-public class CozinhaController {
+public class CozinhaController implements CozinhaControllerOpenApi {
 
 	private CozinhaRepository cozinhaRepository;
 	
@@ -45,34 +45,33 @@ public class CozinhaController {
 	
 	private CozinhaInputDisassembler cozinhaInputDisassembler;
 	
+	private PagedResourcesAssembler<Cozinha> pagedResourcesAssemblerCozinha;
+	
 	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-	public Page<CozinhaModel> listar(@PageableDefault(size = 1) Pageable pageable){
+	public PagedModel<CozinhaModel> listar(@PageableDefault(size = 1) Pageable pageable){
 		Page<Cozinha> cozinhasPage = cozinhaRepository.findAll(pageable);
 		
-		List<CozinhaModel> cozinhasModel = cozinhaModelAssembler.toCollectionModel(cozinhasPage.getContent());
+		PagedModel<CozinhaModel> pagedCozinhaModel = pagedResourcesAssemblerCozinha.toModel(cozinhasPage, cozinhaModelAssembler);
 		
-		Page<CozinhaModel> pageCozinhaModel = new PageImpl<>(cozinhasModel, pageable, cozinhasPage.getTotalElements());
-		
-		return pageCozinhaModel;
+		return pagedCozinhaModel;
 	}
 	
-	@GetMapping(produces = MediaType.APPLICATION_XML_VALUE)
-	public CozinhaXmlWrapper listarXML(){
-		return new CozinhaXmlWrapper(cozinhaRepository.findAll());
-	}
-	
-	@GetMapping("/{cozinhaId}")
+	@GetMapping(value = "/{cozinhaId}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<CozinhaModel> buscarPorId(@PathVariable Long cozinhaId) {
 		return ResponseEntity.ok(cozinhaModelAssembler.toModel(cadastroCozinhaService.buscarPorId(cozinhaId)));
 	}
 	
-	@PostMapping
+	@PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.CREATED)
-	public Cozinha salvar(@RequestBody @Valid CozinhaInput cozinhaInput) {
-		return cadastroCozinhaService.salvar(cozinhaInputDisassembler.toDomainObject(cozinhaInput));
+	public CozinhaModel salvar(@RequestBody @Valid CozinhaInput cozinhaInput) {
+		Cozinha cozinha = cadastroCozinhaService.salvar(cozinhaInputDisassembler.toDomainObject(cozinhaInput));
+		
+		ResourceUriHelper.addCreatedUriInResponseHeader(cozinha.getId());
+		
+		return cozinhaModelAssembler.toModel(cozinha);
 	}
 	
-	@PutMapping("/{cozinhaId}")
+	@PutMapping(value = "/{cozinhaId}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<CozinhaModel> editar(@PathVariable Long cozinhaId, @RequestBody @Valid CozinhaInput cozinhaInput) {
 		Cozinha cozinhaAtual = cadastroCozinhaService.buscarPorId(cozinhaId);
 		
@@ -83,9 +82,9 @@ public class CozinhaController {
 	}
 	
 	@DeleteMapping("/{cozinhaId}")
-	public ResponseEntity<?> remover(@PathVariable Long cozinhaId){
+	@ResponseStatus(code = HttpStatus.NO_CONTENT)
+	public void remover(@PathVariable Long cozinhaId){
 		cadastroCozinhaService.remover(cozinhaId);
-		return ResponseEntity.noContent().build();
 	}
 	
 }

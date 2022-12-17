@@ -1,11 +1,11 @@
 package com.mouzetech.mouzefoodapi.api.controller;
 
-import java.util.List;
-
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,10 +23,12 @@ import com.mouzetech.mouzefoodapi.api.model.output.CidadeModel;
 import com.mouzetech.mouzefoodapi.domain.model.Cidade;
 import com.mouzetech.mouzefoodapi.domain.repository.CidadeRepository;
 import com.mouzetech.mouzefoodapi.domain.service.CadastroCidadeService;
+import com.mouzetech.mouzefoodapi.openapi.controller.CidadeControllerOpenApi;
+
 
 @RestController
-@RequestMapping("/cidades")
-public class CidadeController {
+@RequestMapping(value =  "/cidades")
+public class CidadeController implements CidadeControllerOpenApi {
 
 	@Autowired
 	private CidadeRepository cidadeRepository;
@@ -40,22 +42,24 @@ public class CidadeController {
 	@Autowired
 	private CidadeInputDisassembler cidadeInputDisassembler;
 	
-	@GetMapping
-	public List<CidadeModel> listar(){
+	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+	public CollectionModel<CidadeModel> listar(){
 		return cidadeModelAssembler.toCollectionModel(cidadeRepository.findAll());
 	}
 	
-	@GetMapping("/{cidadeId}")
+	@GetMapping(value = "/{cidadeId}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<CidadeModel> buscarPorId(@PathVariable Long cidadeId){
-		return ResponseEntity.ok(cidadeModelAssembler.toModel(cadastroCidadeService.buscarPorId(cidadeId)));
+		return ResponseEntity.ok(
+				cidadeModelAssembler.toModel(
+				cadastroCidadeService.buscarPorId(cidadeId)));
 	}
 	
-	@GetMapping("/estado/{estadoId}")
-	public ResponseEntity<List<CidadeModel>> buscarPorEstado(@PathVariable Long estadoId){
-		return ResponseEntity.ok(cidadeModelAssembler.toCollectionModel(cadastroCidadeService.buscarPorEstadoId(estadoId)));
+	@GetMapping(value = "/estado/{estadoId}", produces = MediaType.APPLICATION_JSON_VALUE)
+	public CollectionModel<CidadeModel> buscarPorEstado(@PathVariable Long estadoId){
+		return cidadeModelAssembler.toCollectionModel(cadastroCidadeService.buscarPorEstadoId(estadoId));
 	}
 	
-	@PostMapping
+	@PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<CidadeModel> salvar(@RequestBody @Valid CidadeInput cidadeInput) {
 		Cidade cidade = cadastroCidadeService.salvar(cidadeInputDisassembler.toDomainObject(cidadeInput));
 		return ResponseEntity.status(HttpStatus.CREATED).body(cidadeModelAssembler.toModel(cidade));
@@ -67,7 +71,7 @@ public class CidadeController {
 		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 	}
 	
-	@PutMapping("/{cidadeId}")
+	@PutMapping(value = "/{cidadeId}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<CidadeModel> atualizar(@PathVariable Long cidadeId, @RequestBody @Valid CidadeInput cidadeInput){
 		return ResponseEntity.ok(cidadeModelAssembler.toModel(cadastroCidadeService.atualizar(cidadeInput, cidadeId)));
 	}

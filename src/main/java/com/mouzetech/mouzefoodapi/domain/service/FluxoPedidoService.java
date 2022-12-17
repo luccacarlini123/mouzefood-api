@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mouzetech.mouzefoodapi.domain.model.Pedido;
-import com.mouzetech.mouzefoodapi.domain.service.EnvioEmailService.Mensagem;
+import com.mouzetech.mouzefoodapi.domain.repository.PedidoRepository;
 
 @Service
 public class FluxoPedidoService {
@@ -14,27 +14,22 @@ public class FluxoPedidoService {
 	private EmissaoPedidoService emissaoPedidoService;
 	
 	@Autowired
-	private EnvioEmailService envioEmailService;
+	private PedidoRepository pedidoRepository;
 	
 	@Transactional
 	public void confirmarPedido(String pedidoCodigo) {
 		Pedido pedido = emissaoPedidoService.buscarPorCodigo(pedidoCodigo);
 		pedido.confirmar();
 		
-		Mensagem mensagem = Mensagem.builder()
-								.assunto(pedido.getRestaurante().getNome() + " - Pedido confirmado")
-								.destinatario(pedido.getCliente().getEmail())
-								.corpo("pedido-confirmado.html")
-								.variavel("pedido", pedido)
-								.build();
-		
-		envioEmailService.enviar(mensagem);
+		pedidoRepository.save(pedido);
 	}
 	
 	@Transactional
 	public void cancelarPedido(String pedidoCodigo) {
 		Pedido pedido = emissaoPedidoService.buscarPorCodigo(pedidoCodigo);
 		pedido.cancelar();
+		
+		pedidoRepository.save(pedido);
 	}
 	
 	@Transactional

@@ -21,7 +21,10 @@ import javax.persistence.OneToMany;
 import javax.persistence.PrePersist;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.domain.AbstractAggregateRoot;
 
+import com.mouzetech.mouzefoodapi.domain.event.PedidoCanceladoEvent;
+import com.mouzetech.mouzefoodapi.domain.event.PedidoConfirmadoEvent;
 import com.mouzetech.mouzefoodapi.domain.exception.NegocioException;
 
 import lombok.Data;
@@ -29,8 +32,8 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @Entity
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Pedido {
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
+public class Pedido extends AbstractAggregateRoot<Pedido> {
 	
 	@EqualsAndHashCode.Include
 	@Id
@@ -84,6 +87,8 @@ public class Pedido {
 	public void confirmar() {
 		setStatus(StatusPedido.CONFIRMADO);
 		setDataConfirmacao(OffsetDateTime.now());
+		
+		registerEvent(new PedidoConfirmadoEvent(this));
 	}
 	
 	public void entregar() {
@@ -94,6 +99,20 @@ public class Pedido {
 	public void cancelar() {
 		setStatus(StatusPedido.CANCELADO);
 		setDataConfirmacao(OffsetDateTime.now());
+		
+		registerEvent(new PedidoCanceladoEvent(this));
+	}
+	
+	public boolean podeSerConfirmado() {
+		return getStatus().podeTrocarStatusPara(StatusPedido.CONFIRMADO);
+	}
+	
+	public boolean podeSerEntregue() {
+		return getStatus().podeTrocarStatusPara(StatusPedido.ENTREGUE);
+	}
+	
+	public boolean podeSerCancelado() {
+		return getStatus().podeTrocarStatusPara(StatusPedido.CANCELADO);
 	}
 	
 	private void setStatus(StatusPedido novoStatus) {

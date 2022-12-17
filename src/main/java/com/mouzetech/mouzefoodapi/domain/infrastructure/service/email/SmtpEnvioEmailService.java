@@ -14,9 +14,7 @@ import com.mouzetech.mouzefoodapi.domain.service.EnvioEmailService;
 
 import freemarker.template.Configuration;
 import freemarker.template.Template;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 public class SmtpEnvioEmailService implements EnvioEmailService {
 
 	@Autowired
@@ -31,25 +29,28 @@ public class SmtpEnvioEmailService implements EnvioEmailService {
 	@Override
 	public void enviar(Mensagem mensagem) {		
 		try {
-			MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-			
-			String corpo = processarTemplate(mensagem);
-			
-			log.info(corpo);
-			
-			MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, "UTF-8");
-			mimeMessageHelper.setFrom(emailProperties.getRemetente());
-			mimeMessageHelper.setTo(mensagem.getDestinatarios().toArray(new String[0]));
-			mimeMessageHelper.setSubject(mensagem.getAssunto());
-			mimeMessageHelper.setText(corpo, true);
+			MimeMessage mimeMessage = createMimeMessage(mensagem);
 			
 			javaMailSender.send(mimeMessage);
 		} catch (MessagingException e) {
 			throw new EmailException("Não foi possível enviar o e-mail.", e);
 		}
 	}
+
+	protected MimeMessage createMimeMessage(Mensagem mensagem) throws MessagingException {
+		MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+		
+		String corpo = processarTemplate(mensagem);
+		
+		MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, "UTF-8");
+		mimeMessageHelper.setFrom(emailProperties.getRemetente());
+		mimeMessageHelper.setTo(mensagem.getDestinatarios().toArray(new String[0]));
+		mimeMessageHelper.setSubject(mensagem.getAssunto());
+		mimeMessageHelper.setText(corpo, true);
+		return mimeMessage;
+	}
 	
-	private String processarTemplate(Mensagem mensagem) {
+	protected String processarTemplate(Mensagem mensagem) {
 		try {
 			Template template = freemarkerConfig.getTemplate(mensagem.getCorpo());
 			

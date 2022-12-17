@@ -2,25 +2,26 @@ package com.mouzetech.mouzefoodapi.api.model.output;
 
 import java.math.BigDecimal;
 
-import com.fasterxml.jackson.annotation.JsonView;
-import com.mouzetech.mouzefoodapi.api.model.view.RestauranteModelView;
+import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 
+@Relation(collectionRelation = "restaurantes")
 @Getter@Setter
-public class RestauranteModel {
+public class RestauranteModel extends RepresentationModel<RestauranteModel> {
 	
-	@JsonView( {RestauranteModelView.Resumo.class, RestauranteModelView.ApenasNome.class} )
+	@ApiModelProperty(example = "1")
 	private Long id;
 	
-	@JsonView( {RestauranteModelView.Resumo.class, RestauranteModelView.ApenasNome.class} )
+	@ApiModelProperty(example = "Thai Gourmet")
 	private String nome;
 	
-	@JsonView(RestauranteModelView.Resumo.class)
+	@ApiModelProperty(example = "12.00")
 	private BigDecimal taxaFrete;
 	
-	@JsonView(RestauranteModelView.Resumo.class)
 	private CozinhaModel cozinha;
 	private Boolean ativo;
 	private Boolean aberto;

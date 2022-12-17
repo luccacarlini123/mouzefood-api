@@ -1,10 +1,14 @@
 package com.mouzetech.mouzefoodapi.api.controller;
 
-import java.util.List;
+import java.time.OffsetDateTime;
+import java.util.concurrent.TimeUnit;
 
 import javax.validation.Valid;
 
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.filter.ShallowEtagHeaderFilter;
 
 import com.mouzetech.mouzefoodapi.api.model.assembler.FormaPagamentoModelAssembler;
 import com.mouzetech.mouzefoodapi.api.model.disassembler.FormaPagamentoInputDisassembler;
@@ -23,30 +29,73 @@ import com.mouzetech.mouzefoodapi.api.model.output.FormaPagamentoModel;
 import com.mouzetech.mouzefoodapi.domain.model.FormaPagamento;
 import com.mouzetech.mouzefoodapi.domain.repository.FormaPagamentoRepository;
 import com.mouzetech.mouzefoodapi.domain.service.CadastroFormaPagamentoService;
+import com.mouzetech.mouzefoodapi.openapi.controller.FormaPagamentoControllerOpenApi;
 
 import lombok.AllArgsConstructor;
 
 @RestController
 @RequestMapping("/formas-pagamento")
 @AllArgsConstructor
-public class FormaPagamentoController {
+public class FormaPagamentoController implements FormaPagamentoControllerOpenApi {
 
 	private FormaPagamentoRepository formaPagamentoRepository;
 	private CadastroFormaPagamentoService cadastroFormaPagamentoService;
 	private FormaPagamentoModelAssembler formaPagamentoModelAssembler;
 	private FormaPagamentoInputDisassembler formaPagamentoInputDisassembler;
 	
-	@GetMapping
-	public ResponseEntity<List<FormaPagamentoModel>> buscar(){
-		return ResponseEntity.ok(formaPagamentoModelAssembler.toCollectionModel(formaPagamentoRepository.findAll()));
+	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<CollectionModel<FormaPagamentoModel>> buscar(ServletWebRequest request){
+		ShallowEtagHeaderFilter.disableContentCaching(request.getRequest());
+		
+		String eTag = "0";
+		
+		OffsetDateTime maiorDataAtualizacao = formaPagamentoRepository.obterMaiorDataAtualizacao();
+		
+		if(maiorDataAtualizacao != null) {
+			eTag = String.valueOf(maiorDataAtualizacao.toEpochSecond());
+		}
+		
+		if(request.checkNotModified(eTag)) {
+			return null;
+		}
+		
+		CollectionModel<FormaPagamentoModel> formasPagamentoModel = 
+				formaPagamentoModelAssembler.toCollectionModel(formaPagamentoRepository.findAll());
+		
+		return ResponseEntity
+				.ok()
+				.cacheControl(CacheControl.maxAge(10, TimeUnit.SECONDS))
+				.eTag(eTag)
+				.body(formasPagamentoModel);
 	}
 	
-	@GetMapping("/{formaPagamentoId}")
-	public ResponseEntity<FormaPagamentoModel> buscarPorId(@PathVariable Long formaPagamentoId){
-		return ResponseEntity.ok(formaPagamentoModelAssembler.toModel(cadastroFormaPagamentoService.buscarPorId(formaPagamentoId)));
+	@GetMapping(value = "/{formaPagamentoId}", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<FormaPagamentoModel> buscarPorId(@PathVariable Long formaPagamentoId, ServletWebRequest request){
+		ShallowEtagHeaderFilter.disableContentCaching(request.getRequest());
+		
+		String eTag = "0";
+		
+		OffsetDateTime maiorDataAtualizacao = formaPagamentoRepository.obterMaiorDataAtualizacaoPorId(formaPagamentoId);
+		
+		if(maiorDataAtualizacao != null) {
+			eTag = String.valueOf(maiorDataAtualizacao.toEpochSecond());
+		}
+		
+		if(request.checkNotModified(eTag)) {
+			return null;
+		}
+		
+		FormaPagamentoModel formaPagamentoModel = 
+				formaPagamentoModelAssembler.toModel(cadastroFormaPagamentoService.buscarPorId(formaPagamentoId));
+		
+		return ResponseEntity
+				.ok()
+				.cacheControl(CacheControl.maxAge(10, TimeUnit.SECONDS))
+				.eTag(eTag)
+				.body(formaPagamentoModel);
 	}
 	
-	@PostMapping
+	@PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<FormaPagamentoModel> salvar(@RequestBody @Valid FormaPagamentoInput formaPagamentoInput){
 		FormaPagamento formaPagamento = formaPagamentoInputDisassembler.toObjectDomain(formaPagamentoInput);
 		return ResponseEntity.status(HttpStatus.CREATED).body((formaPagamentoModelAssembler.toModel(formaPagamentoRepository.save(formaPagamento))));

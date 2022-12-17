@@ -4,7 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.mouzetech.mouzefoodapi.core.email.EmailProperties.Implementacao;
 import com.mouzetech.mouzefoodapi.domain.infrastructure.service.email.FakeEnvioEmailService;
+import com.mouzetech.mouzefoodapi.domain.infrastructure.service.email.SandboxEnvioEmailService;
 import com.mouzetech.mouzefoodapi.domain.infrastructure.service.email.SmtpEnvioEmailService;
 import com.mouzetech.mouzefoodapi.domain.service.EnvioEmailService;
 
@@ -16,10 +18,12 @@ public class EmailConfig {
 	
 	@Bean
 	public EnvioEmailService emailService() {
-		if(emailProperties.getImpl().equals("fake")) {
+		if(emailProperties.getImpl().equals(Implementacao.FAKE)) {
 			return new FakeEnvioEmailService();
-		} else {
+		} else if(emailProperties.getImpl().equals(Implementacao.SMTP)) {
 			return new SmtpEnvioEmailService();
+		} else {
+			return new SandboxEnvioEmailService();
 		}
 	}
 }

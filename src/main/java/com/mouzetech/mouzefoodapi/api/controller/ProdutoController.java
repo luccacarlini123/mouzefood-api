@@ -4,7 +4,9 @@ import java.util.List;
 
 import javax.validation.Valid;
 
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mouzetech.mouzefoodapi.api.ApiLinkBuilder;
 import com.mouzetech.mouzefoodapi.api.model.assembler.ProdutoModelAssembler;
 import com.mouzetech.mouzefoodapi.api.model.disassembler.ProdutoInputDisassembler;
 import com.mouzetech.mouzefoodapi.api.model.input.ProdutoInput;
@@ -23,22 +26,24 @@ import com.mouzetech.mouzefoodapi.api.model.output.ProdutoModel;
 import com.mouzetech.mouzefoodapi.domain.model.Produto;
 import com.mouzetech.mouzefoodapi.domain.repository.ProdutoRepository;
 import com.mouzetech.mouzefoodapi.domain.service.CadastroProdutoService;
+import com.mouzetech.mouzefoodapi.openapi.controller.ProdutoControllerOpenApi;
 
 import lombok.AllArgsConstructor;
 
 @RestController
 @RequestMapping("/restaurantes/{restauranteId}/produtos")
 @AllArgsConstructor
-public class ProdutoController {
+public class ProdutoController implements ProdutoControllerOpenApi {
 
 	private ProdutoRepository produtoRepository;
 	private CadastroProdutoService cadastroProdutoService;
 	private ProdutoModelAssembler produtoModelAssembler;
 	private ProdutoInputDisassembler produtoInputDisassembler;
+	private ApiLinkBuilder apiLinkBuilder;
 	
-	@GetMapping
+	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.OK)
-	public List<ProdutoModel> buscarProdutosDoRestaurante(@PathVariable Long restauranteId, @RequestParam(required = false) boolean buscarInativos){
+	public CollectionModel<ProdutoModel> buscarProdutosDoRestaurante(@PathVariable Long restauranteId, @RequestParam(required = false, defaultValue = "false") Boolean buscarInativos){
 		List<Produto> produtos = null;
 		
 		if(buscarInativos) {
@@ -46,17 +51,20 @@ public class ProdutoController {
 		} else {
 			produtos = cadastroProdutoService.buscarProdutosAtivosDoRestaurante(restauranteId);
 		}
+		CollectionModel<ProdutoModel> collectionModelProduto = produtoModelAssembler.toCollectionModel(produtos);
 		
-		return produtoModelAssembler.toCollectionModel(produtos);
+		collectionModelProduto.add(apiLinkBuilder.linkToProdutos(restauranteId));
+		
+		return collectionModelProduto;
 	}
 	
-	@GetMapping("/{produtoId}")
+	@GetMapping(value = "/{produtoId}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ProdutoModel> buscarProdutoDoRestaurante(@PathVariable Long restauranteId, @PathVariable Long produtoId){
 		Produto produto = cadastroProdutoService.buscarProdutoDoRestaurante(restauranteId, produtoId);
 		return ResponseEntity.ok(produtoModelAssembler.toModel(produto));
 	}
 	
-	@PostMapping
+	@PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.CREATED)
 	public ProdutoModel adicionarProdutoEmRestaurante(@PathVariable Long restauranteId, @RequestBody @Valid ProdutoInput produtoInput) {
 		Produto produto = produtoInputDisassembler.toObject(produtoInput);
@@ -64,7 +72,7 @@ public class ProdutoController {
 		return produtoModelAssembler.toModel(produto);
 	}
 	
-	@PutMapping("/{produtoId}")
+	@PutMapping(path = "/{produtoId}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.OK)
 	public ProdutoModel atualizarProduto(@PathVariable Long restauranteId, @PathVariable Long produtoId, @RequestBody @Valid ProdutoInput produtoInput) {
 		Produto produto = cadastroProdutoService.buscarProdutoDoRestaurante(restauranteId, produtoId);

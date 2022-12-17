@@ -9,7 +9,7 @@ public class PermissaoNaoEncontradaException extends EntidadeNaoEncontradaExcept
 	}
 	
 	public PermissaoNaoEncontradaException(Long permissaoId) {
-		super("Não foi possível encontrar uam permissão com o id: "+permissaoId);
+		super("Não foi possível encontrar uma permissão com o id: "+permissaoId);
 	}
 
 	

@@ -1,13 +1,13 @@
 package com.mouzetech.mouzefoodapi.api.controller;
 
-import java.util.List;
-
 import javax.validation.Valid;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.google.common.collect.ImmutableMap;
+import com.mouzetech.mouzefoodapi.api.data.PageWrapper;
 import com.mouzetech.mouzefoodapi.api.data.PageableTranslator;
 import com.mouzetech.mouzefoodapi.api.model.assembler.PedidoModelAssembler;
+import com.mouzetech.mouzefoodapi.api.model.assembler.PedidoResumoModelAssembler;
 import com.mouzetech.mouzefoodapi.api.model.disassembler.PedidoInputDisassembler;
 import com.mouzetech.mouzefoodapi.api.model.input.PedidoInput;
 import com.mouzetech.mouzefoodapi.api.model.output.PedidoModel;
@@ -31,15 +33,18 @@ import com.mouzetech.mouzefoodapi.domain.model.Pedido;
 import com.mouzetech.mouzefoodapi.domain.model.Usuario;
 import com.mouzetech.mouzefoodapi.domain.repository.PedidoRepository;
 import com.mouzetech.mouzefoodapi.domain.service.EmissaoPedidoService;
+import com.mouzetech.mouzefoodapi.openapi.controller.PedidoControllerOpenApi;
 
 import lombok.AllArgsConstructor;
 
 @RestController
 @RequestMapping("/pedidos")
 @AllArgsConstructor
-public class PedidoController {
+public class PedidoController implements PedidoControllerOpenApi {
 
 	private PedidoModelAssembler pedidoModelAssembler;
+	private PagedResourcesAssembler<Pedido> pagedResourcesAssemblerPedido;
+	private PedidoResumoModelAssembler pedidoResumoModelAssembler;
 	private PedidoInputDisassembler pedidoInputDisassembler;
 	private PedidoRepository pedidoRepository;
 	private EmissaoPedidoService emissaoPedidoService;
@@ -62,35 +67,35 @@ public class PedidoController {
 //		return mappingJacksonValue;
 //	}
 	
-	@GetMapping
-	public Page<PedidoResumoModel> pesquisar(PedidoFilter filtro, Pageable pageable){
-		pageable = traduzirPageable(pageable);
+	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+	public PagedModel<PedidoResumoModel> pesquisar(PedidoFilter filtro, Pageable pageable){
+		Pageable pageableTraduzido = traduzirPageable(pageable);
 		
-		Page<Pedido> pedidosPage = pedidoRepository.findAll(PedidoSpecs.usandoFiltro(filtro), pageable);
+		Page<Pedido> pedidosPage = pedidoRepository.findAll(PedidoSpecs.usandoFiltro(filtro), pageableTraduzido);
 		
-		List<PedidoResumoModel> pedidosResumoModel = pedidoModelAssembler.toCollectionResumoModel(pedidosPage.getContent());
+		pedidosPage = new PageWrapper<>(pedidosPage, pageable);
 		
-		Page<PedidoResumoModel> pagePedidoResumoModel = new PageImpl<>(pedidosResumoModel, pageable, pedidosPage.getTotalElements());
+		PagedModel<PedidoResumoModel> pagedModelPedidoResumo = pagedResourcesAssemblerPedido.toModel(pedidosPage, pedidoResumoModelAssembler);
 		
-		return pagePedidoResumoModel;
+		return pagedModelPedidoResumo;
 	}
 	
 	private Pageable traduzirPageable(Pageable pageable) {
 		var mapeamento = ImmutableMap.of(
 				"codigo", "codigo",
 				"nomeCliente", "cliente.nome",
-				"restaurante.nome", "restaurante.nome",
+				"nomerestaurante", "restaurante.nome",
 				"valorTotal", "valorTotal");
 
 		return PageableTranslator.translate(pageable, mapeamento);
 	}
 
-	@GetMapping("/{pedidoCodigo}")
+	@GetMapping(value = "/{pedidoCodigo}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public PedidoModel buscarPorId(@PathVariable String pedidoCodigo){
 		return pedidoModelAssembler.toModel(emissaoPedidoService.buscarPorCodigo(pedidoCodigo));
 	}
 	
-	@PostMapping
+	@PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.CREATED)
 	public PedidoModel emitirPedido(@Valid @RequestBody PedidoInput pedidoInput) {
 		try {			
