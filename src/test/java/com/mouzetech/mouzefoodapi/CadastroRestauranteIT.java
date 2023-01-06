@@ -14,11 +14,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.mouzetech.mouzefoodapi.domain.model.Cozinha;
-import com.mouzetech.mouzefoodapi.domain.model.Restaurante;
-import com.mouzetech.mouzefoodapi.domain.repository.RestauranteRepository;
-import com.mouzetech.mouzefoodapi.domain.service.CadastroCozinhaService;
-import com.mouzetech.mouzefoodapi.domain.service.CadastroRestauranteService;
+import com.mouzetech.mouzefood.domain.model.Cozinha;
+import com.mouzetech.mouzefood.domain.model.Restaurante;
+import com.mouzetech.mouzefood.domain.repository.RestauranteRepository;
+import com.mouzetech.mouzefood.domain.service.CadastroCozinhaService;
+import com.mouzetech.mouzefood.domain.service.CadastroRestauranteService;
 import com.mouzetech.mouzefoodapi.util.DatabaseCleaner;
 import com.mouzetech.mouzefoodapi.util.ResourceUtils;
 
